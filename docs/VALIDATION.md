@@ -13,7 +13,9 @@ swift build --package-path mac
 
 The 14 Python tests were executed on Linux with Python 3.12. They cover SSH argument validation, safe quoting, identity parsing, default workspace, file listing/preview/download, no-overwrite behavior, binary/missing files, subprocess output limits/timeouts, shell input/output/close and cancelled-connection stale-state rejection, and SIGTERM cleanup of the local shell subprocess.
 
-The explicit local SSH fixture uses a clean POSIX shell and simulates the exact requested GNU find record format on client platforms. Its GNU-find records were separately compared with real GNU find on Linux for regular files, quotes/Unicode, hidden directories and symlinks. It does **not** establish real SSH authentication, a remote PTY or an Omarchy connection. The Swift package built and its 7 support tests passed on macOS arm64 with Swift 6.4. UI and real SSH acceptance remain separate checks. No real machine credential is included in this repository.
+On 2026-10-11, the revised source also passed all 14 Python tests with Python 3.13.5 on macOS 26.6.2 arm64. Python bytecode compilation passed. The macOS Swift 6.4 run passed all 7 support tests and built the `PerchMac` product.
+
+The explicit local SSH fixture uses a clean POSIX shell and simulates the exact requested GNU find record format on client platforms. Its GNU-find records were separately compared with real GNU find on Linux for regular files, quotes/Unicode, hidden directories and symlinks. It does **not** establish real SSH authentication, a remote PTY or an Omarchy connection. UI and real SSH acceptance remain separate checks. No real machine credential is included in this repository.
 
 ## Manual acceptance checklist
 
@@ -32,4 +34,4 @@ Do not publish screenshots, machine identities, IP addresses, SSH configuration,
 
 The first native test pass found 3 Python fixture issues: macOS BSD find does not implement GNU `-printf`; macOS temporary paths may resolve through a canonical filesystem alias; and an interactive zsh without a PTY can wait during startup. The production target remains an Omarchy/Linux guest.
 
-The revised fixture explicitly models the GNU-find wire format, uses resolved temporary paths, and selects a clean `/bin/sh` independent of the user's shell/startup files. Tests launch it through the current Python executable rather than requiring a restored executable bit. The real SSH terminal still requests `-tt` and uses the remote user's shell. All 14 tests pass on Linux after this change; revised macOS Python results await rerun. No tests were removed or skipped.
+The revised fixture explicitly models the GNU-find wire format, uses resolved temporary paths, and selects a clean `/bin/sh` independent of the user's shell/startup files. Tests launch it through the current Python executable rather than requiring a restored executable bit. The real SSH terminal still requests `-tt` and uses the remote user's shell. All 14 tests pass on Linux and macOS after this change. No tests were removed or skipped.
