@@ -2,6 +2,7 @@ import hashlib
 import importlib.util
 import json
 import os
+import plistlib
 from pathlib import Path
 import select
 import shutil
@@ -17,6 +18,15 @@ spec.loader.exec_module(build)
 
 
 class PackagingTests(unittest.TestCase):
+    def test_bundle_declares_local_network_use_without_extra_network_exceptions(self):
+        info = plistlib.loads(plistlib.dumps(build.bundle_info('0.1.0', '2', 'v0.1.0-alpha.2')))
+        self.assertEqual(info['NSLocalNetworkUsageDescription'],
+                         'Perch connects to machines you choose on your local network using SSH to view files and use the terminal.')
+        self.assertEqual(info['CFBundleIdentifier'], 'io.github.yhyang1.perch')
+        self.assertTrue(info['PerchBundledRuntime'])
+        self.assertNotIn('NSBonjourServices', info)
+        self.assertNotIn('NSAppTransportSecurity', info)
+
     def test_only_explicit_alpha_versions(self):
         self.assertEqual(build.parse_version('v0.1.0-alpha.1'), ('0.1.0', '1'))
         for version in ('latest', 'v0.1.0', '../bad', 'v0.1.0-alpha.1; echo bad', 'v1.0.0-beta.1'):

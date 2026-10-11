@@ -387,6 +387,6 @@ final class MachineModel: ObservableObject {
         filesLoading = false
         previewLoading = false
         downloading = false
-        errorMessage = message
+        errorMessage = ConnectionDiagnostics.message(for: message)
     }
 }

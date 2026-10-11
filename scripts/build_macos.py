@@ -32,6 +32,19 @@ def parse_version(value):
     return match.group(1), match.group(2)
 
 
+def bundle_info(version, build_number, display_version):
+    return {
+        'CFBundleExecutable': 'PerchMac', 'CFBundleIdentifier': 'io.github.yhyang1.perch',
+        'CFBundleName': 'Perch', 'CFBundleDisplayName': 'Perch', 'CFBundlePackageType': 'APPL',
+        'CFBundleShortVersionString': version, 'CFBundleVersion': build_number,
+        'LSMinimumSystemVersion': '13.0', 'NSHighResolutionCapable': True,
+        'NSLocalNetworkUsageDescription': 'Perch connects to machines you choose on your local network using SSH to view files and use the terminal.',
+        'LSApplicationCategoryType': 'public.app-category.developer-tools',
+        'PerchBundledRuntime': True, 'PerchDisplayVersion': display_version,
+        'NSHumanReadableCopyright': 'Copyright © 2026 Perch contributors. MIT; bundled runtime has separate licenses.'
+    }
+
+
 def macho_files(root):
     root = root.resolve()
     found = []
@@ -124,15 +137,7 @@ def main():
         shutil.copytree(ROOT / 'perch', bridge / 'perch', ignore=shutil.ignore_patterns('__pycache__', '*.pyc'))
         shutil.copytree(ROOT / 'packaging/runtime-licenses', resources / 'ThirdPartyLicenses')
         shutil.copy2(ROOT / 'LICENSE', resources / 'Perch-LICENSE.txt')
-        info = {
-            'CFBundleExecutable': 'PerchMac', 'CFBundleIdentifier': 'io.github.yhyang1.perch',
-            'CFBundleName': 'Perch', 'CFBundleDisplayName': 'Perch', 'CFBundlePackageType': 'APPL',
-            'CFBundleShortVersionString': version, 'CFBundleVersion': build_number,
-            'LSMinimumSystemVersion': '13.0', 'NSHighResolutionCapable': True,
-            'LSApplicationCategoryType': 'public.app-category.developer-tools',
-            'PerchBundledRuntime': True, 'PerchDisplayVersion': args.version,
-            'NSHumanReadableCopyright': 'Copyright © 2026 Perch contributors. MIT; bundled runtime has separate licenses.'
-        }
+        info = bundle_info(version, build_number, args.version)
         with (contents / 'Info.plist').open('wb') as stream:
             plistlib.dump(info, stream)
         metadata = {
