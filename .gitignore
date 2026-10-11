@@ -1,0 +1,20 @@
+__pycache__/
+*.pyc
+.DS_Store
+mac/.build/
+.build/
+*.app/
+# Local diagnostics, credentials, runtime configuration, build artifacts
+perch-smoke-*/
+docs/local-codex-smoke.json
+docs/python-tests.txt
+.env
+.env.*
+*.pem
+*.key
+id_rsa*
+id_ed25519*
+known_hosts*
+*.log
+*.zip
+*.tar.gz
