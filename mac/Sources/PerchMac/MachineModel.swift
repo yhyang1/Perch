@@ -36,11 +36,11 @@ final class MachineModel: ObservableObject {
     @Published var host = ""
     @Published var workspace = ""
     @Published var pythonPath = "/usr/bin/python3"
-    @Published var projectRoot: String
+    @Published var projectRoot = ""
     @Published var terminalInput = ""
     @Published private(set) var state: MachineState = .disconnected
     @Published private(set) var verified = false
-    @Published private(set) var status = "No machine connection has been made."
+    @Published private(set) var status = "Enter your SSH host to connect."
     @Published private(set) var identity: [String: String] = [:]
     @Published private(set) var entries: [RemoteFile] = []
     @Published private(set) var browsingPath = ""
@@ -63,9 +63,11 @@ final class MachineModel: ObservableObject {
     private var timeout: DispatchWorkItem?
 
     init() {
-        let cwd = FileManager.default.currentDirectoryPath
-        projectRoot = ProcessInfo.processInfo.environment["PERCH_ROOT"] ??
-            (FileManager.default.fileExists(atPath: cwd + "/perch/bridge.py") ? cwd : "")
+        if !bridge.isPackaged {
+            let cwd = FileManager.default.currentDirectoryPath
+            projectRoot = ProcessInfo.processInfo.environment["PERCH_ROOT"] ??
+                (FileManager.default.fileExists(atPath: cwd + "/perch/bridge.py") ? cwd : "")
+        }
         bridge.onEvent = { [weak self] event, payload in self?.receive(event, payload) }
         bridge.onDiagnostic = { [weak self] text in
             guard let self else { return }
@@ -81,6 +83,7 @@ final class MachineModel: ObservableObject {
     }
 
     var editable: Bool { state == .disconnected || state == .error }
+    var isPackaged: Bool { bridge.isPackaged }
     var connected: Bool { verified && state == .ready }
     var terminalCommand: String? { ShellCommand.ssh(alias: host, workspace: workspace) }
     var canGoUp: Bool {
@@ -88,6 +91,7 @@ final class MachineModel: ObservableObject {
     }
 
     func chooseRoot() {
+        guard !isPackaged else { return }
         let panel = NSOpenPanel()
         panel.title = "Choose the Perch project folder"
         panel.message = "Select the folder containing perch/bridge.py."
@@ -156,7 +160,7 @@ final class MachineModel: ObservableObject {
         sessionID = UUID()
         let token = sessionID
         state = .disconnected
-        status = "Disconnected. Remote processes already started may continue running."
+        status = "Disconnected. Background jobs may keep running."
         resetSession()
         bridge.request("machineDisconnect") { [weak self] _ in
             guard let self, self.sessionID == token else { return }

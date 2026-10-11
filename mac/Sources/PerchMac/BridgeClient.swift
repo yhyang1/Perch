@@ -21,32 +21,35 @@ final class BridgeClient {
     private var framer = JSONLineFramer()
     private var pending: [String: Completion] = [:]
     private var generation = UUID()
+    private let resourceURL: URL?
+    let isPackaged: Bool
+
+    init(bundle: Bundle = .main) {
+        resourceURL = bundle.resourceURL
+        isPackaged = bundle.object(forInfoDictionaryKey: "PerchBundledRuntime") as? Bool == true
+    }
 
     var isRunning: Bool { process?.isRunning == true }
 
     func start(pythonPath: String, projectRoot: String) throws {
         stop()
-        guard InputValidation.absolutePath(pythonPath),
-              FileManager.default.isExecutableFile(atPath: pythonPath) else {
-            throw BridgeFailure(message: "Python is not executable at \(pythonPath). Choose an existing Python 3.9+ interpreter.")
-        }
-        let root = URL(fileURLWithPath: projectRoot, isDirectory: true).standardizedFileURL
-        guard InputValidation.absolutePath(projectRoot),
-              FileManager.default.fileExists(atPath: root.appendingPathComponent("perch/bridge.py").path) else {
-            throw BridgeFailure(message: "Choose the Perch project root containing perch/bridge.py.")
-        }
+        let launch = try BundleLaunch.configuration(
+            resourceURL: resourceURL,
+            isPackaged: isPackaged,
+            pythonPath: pythonPath,
+            projectRoot: projectRoot,
+            environment: ProcessInfo.processInfo.environment
+        )
 
         let task = Process()
         let input = Pipe(), output = Pipe(), diagnostics = Pipe()
         let token = UUID()
         generation = token
         framer = JSONLineFramer()
-        task.executableURL = URL(fileURLWithPath: pythonPath)
-        task.arguments = ["-u", "-m", "perch.bridge"]
-        task.currentDirectoryURL = root
-        var environment = ProcessInfo.processInfo.environment
-        environment["PYTHONUNBUFFERED"] = "1"
-        task.environment = environment
+        task.executableURL = launch.executableURL
+        task.arguments = launch.arguments
+        task.currentDirectoryURL = launch.workingDirectoryURL
+        task.environment = launch.environment
         task.standardInput = input
         task.standardOutput = output
         task.standardError = diagnostics
@@ -74,7 +77,9 @@ final class BridgeClient {
         task.terminationHandler = { [weak self] task in
             DispatchQueue.main.async { [weak self] in
                 guard let self, self.generation == token else { return }
-                let message = "Bridge exited (status \(task.terminationStatus)). Check the Python runtime, SSH configuration, and diagnostics."
+                let message = self.isPackaged
+                    ? "Connection service exited (status \(task.terminationStatus)). Check your SSH configuration and Diagnostics."
+                    : "Bridge exited (status \(task.terminationStatus)). Check the Python runtime, SSH configuration, and diagnostics."
                 self.stop()
                 self.onExit?(message)
             }
@@ -83,7 +88,7 @@ final class BridgeClient {
             try task.run()
         } catch {
             stop()
-            throw BridgeFailure(message: "Could not launch the Python bridge: \(error.localizedDescription)")
+            throw BridgeFailure(message: "Could not start the connection service: \(error.localizedDescription)")
         }
     }
 

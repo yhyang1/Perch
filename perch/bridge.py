@@ -32,7 +32,9 @@ async def main():
         ident = message.get('id')
         try:
             method, params = message['method'], message.get('params', {})
-            if method == 'machineConnect':
+            if method == 'health':
+                result = {'protocol': 1, 'implementation': 'perch.bridge'}
+            elif method == 'machineConnect':
                 result = await machine.connect(params)
             elif method == 'machineDisconnect':
                 result = await machine.disconnect()

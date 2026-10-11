@@ -1,0 +1,70 @@
+name: Test and build macOS preview
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: perch-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+jobs:
+  python-tests:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - name: Test portable client core and packaging sources
+        run: |
+          python3 -B -m unittest discover -s tests -v
+          python3 -m compileall -q perch scripts packaging
+          bash -n scripts/build_macos.sh
+
+  macos-package:
+    needs: python-tests
+    runs-on: macos-15 # Standard public arm64 runner; build script also asserts arm64.
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - name: Choose explicit preview version
+        id: version
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          if [[ "$REF_TYPE" == tag ]]; then
+            [[ "$REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-alpha\.[0-9]+$ ]] || { echo 'Only explicit alpha tags are supported.' >&2; exit 1; }
+            echo "value=$REF_NAME" >> "$GITHUB_OUTPUT"
+          else
+            echo 'value=v0.1.0-alpha.1' >> "$GITHUB_OUTPUT"
+          fi
+      - name: Test, build, ad-hoc sign and verify DMG
+        env:
+          VERSION: ${{ steps.version.outputs.value }}
+        run: bash scripts/build_macos.sh "$VERSION"
+      - name: Require a clean, matching release source
+        env:
+          EXPECTED_COMMIT: ${{ github.sha }}
+        run: |
+          test "$(/usr/bin/plutil -extract source_commit raw dist/BUILD-METADATA.json)" = "$EXPECTED_COMMIT"
+          test "$(/usr/bin/plutil -extract source_dirty raw dist/BUILD-METADATA.json)" = false
+      - name: Upload verified preview package
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: Perch-macos-arm64
+          path: |
+            dist/*.dmg
+            dist/*.app.zip
+            dist/SHA256SUMS
+            dist/BUILD-METADATA.json
+            dist/RELEASE-NOTES.md
+          if-no-files-found: error
+          retention-days: 14

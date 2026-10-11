@@ -1,0 +1,2 @@
+# Preserve verbatim upstream license notices, including original trailing blanks.
+packaging/runtime-licenses/*.txt -whitespace

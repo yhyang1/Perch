@@ -18,3 +18,10 @@ known_hosts*
 *.log
 *.zip
 *.tar.gz
+# Native bundle build/download cache; never commit runtime binaries
+/build/
+/dist/
+
+# Local notarization receipts and unpublished images
+_private/
+*.dmg

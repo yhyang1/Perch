@@ -44,12 +44,12 @@ struct MachineView: View {
                 Divider()
                 DisclosureGroup(isExpanded: $showDiagnostics) {
                     ScrollView {
-                        Text(model.diagnostics.isEmpty ? "No bridge stderr output." : model.diagnostics)
+                        Text(model.diagnostics.isEmpty ? "No diagnostic messages." : model.diagnostics)
                             .font(.system(.caption, design: .monospaced)).textSelection(.enabled)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }.frame(maxHeight: 110)
                 } label: {
-                    Text("Bridge diagnostics · stderr").font(.caption).foregroundStyle(.secondary)
+                    Text("Diagnostics").font(.caption).foregroundStyle(.secondary)
                 }.padding(14)
             }
             .background(Color(nsColor: .textBackgroundColor))
@@ -66,16 +66,11 @@ struct MachineView: View {
                         Text("Your machine, within reach").font(.caption).foregroundStyle(.secondary)
                     }
                 }
-                VStack(alignment: .leading, spacing: 5) {
-                    Text("NATIVE PROTOTYPE").font(.system(size: 10, weight: .bold, design: .monospaced))
-                    Text("Live access is shown only after a real SSH handshake.").font(.caption).foregroundStyle(.secondary)
-                }.padding(10).frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.accentColor.opacity(0.08), in: RoundedRectangle(cornerRadius: 9))
                 VStack(alignment: .leading, spacing: 12) {
-                    heading("MACHINE CONNECTION", "network")
+                    heading("CONNECTION", "network")
                     field("SSH host or alias", "my-machine", $model.host)
                     field("Remote workspace (optional)", "Leave empty for the SSH login directory", $model.workspace)
-                    Text("Uses your existing SSH configuration and authentication. No agent is required.")
+                    Text("Uses your existing SSH configuration and authentication.")
                         .font(.caption).foregroundStyle(.secondary)
                 }.disabled(!model.editable)
                 HStack {
@@ -83,21 +78,23 @@ struct MachineView: View {
                         .buttonStyle(.borderedProminent).disabled(!model.editable)
                     if model.state != .disconnected { Button("Disconnect") { model.disconnect() } }
                 }
-                Divider()
-                VStack(alignment: .leading, spacing: 12) {
-                    heading("LOCAL BRIDGE", "externaldrive")
-                    field("Existing Python 3.9+", "/usr/bin/python3", $model.pythonPath)
-                    field("Perch project root", "Folder containing perch/bridge.py", $model.projectRoot)
-                    Button("Choose folder…") { model.chooseRoot() }
-                    Text("Set PERCH_ROOT at launch, or choose the project folder. No runtime is installed automatically.")
-                        .font(.caption).foregroundStyle(.secondary)
-                }.disabled(!model.editable)
+                if !model.isPackaged {
+                    Divider()
+                    VStack(alignment: .leading, spacing: 12) {
+                        heading("DEVELOPER RUNTIME", "externaldrive")
+                        field("Existing Python 3.9+", "/usr/bin/python3", $model.pythonPath)
+                        field("Perch project root", "Folder containing perch/bridge.py", $model.projectRoot)
+                        Button("Choose folder…") { model.chooseRoot() }
+                        Text("Set PERCH_ROOT at launch, or choose the project folder.")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }.disabled(!model.editable)
+                }
                 Divider()
                 VStack(alignment: .leading, spacing: 11) {
                     heading("SYSTEM TERMINAL", "arrow.up.forward.app")
                     Button { model.copySSH() } label: { Label("Copy SSH command", systemImage: "terminal") }
                         .disabled(model.terminalCommand == nil)
-                    Text("Paste into your terminal for interactive login or full-screen tools. Perch only copies this command.")
+                    Text("Paste into your terminal for interactive login or full-screen tools.")
                         .font(.caption).foregroundStyle(.secondary)
                 }
             }.padding(20)
@@ -114,7 +111,7 @@ struct MachineView: View {
                 }
                 Spacer()
                 if model.state == .connecting { ProgressView().controlSize(.small) }
-                Text("MACHINE · SSH").font(.system(size: 10, weight: .medium, design: .monospaced)).foregroundStyle(.secondary)
+                Text("SSH").font(.system(size: 10, weight: .medium, design: .monospaced)).foregroundStyle(.secondary)
             }
             Picker("Workspace section", selection: $section) {
                 Text("Machine").tag("Machine")
@@ -128,9 +125,9 @@ struct MachineView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 Image(systemName: "desktopcomputer").font(.system(size: 42, weight: .light)).foregroundStyle(Color.accentColor)
-                Text(model.connected ? "One machine. A few useful doors." : "Connect to the system itself.")
+                Text(model.connected ? "Your machine" : "Connect to your machine")
                     .font(.system(size: 29, weight: .semibold, design: .rounded))
-                Text("See the machine's identity, browse its files, and open a real SSH shell. An AI agent is optional and is not part of this connection.")
+                Text("Browse files and use an SSH shell on your machine.")
                     .foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 if model.connected {
                     VStack(spacing: 0) {
@@ -142,8 +139,10 @@ struct MachineView: View {
                         identityRow("Transport", model.identity["transport"] ?? "ssh")
                     }.padding(14).background(Color.primary.opacity(0.035), in: RoundedRectangle(cornerRadius: 12))
                 } else {
-                    Label("No verified machine identity yet.", systemImage: "link.badge.plus").foregroundStyle(.secondary)
-                    Text("Choose the local Perch folder and Python interpreter, then connect. Leave the workspace empty to use the SSH login directory. Authentication failures remain visible; there is no demo session.")
+                    Label("Not connected", systemImage: "link.badge.plus").foregroundStyle(.secondary)
+                    Text(model.isPackaged
+                         ? "Enter an SSH host or alias, then connect. Leave the workspace empty to use your login directory."
+                         : "Choose your Python interpreter and Perch project folder, then enter an SSH host or alias. Leave the workspace empty to use your login directory.")
                         .font(.callout).foregroundStyle(.secondary)
                 }
                 HStack(spacing: 12) {
@@ -151,13 +150,11 @@ struct MachineView: View {
                     Button { section = "Terminal" } label: { Label("Open terminal view", systemImage: "terminal") }
                 }
                 VStack(alignment: .leading, spacing: 9) {
-                    Label("Desktop · not connected", systemImage: "display").font(.headline)
-                    Text("Network desktop access is not connected. Use your existing virtual-machine console or desktop client outside Perch. Perch has not installed a desktop service or opened any ports.")
+                    Label("Desktop unavailable", systemImage: "display").font(.headline)
+                    Text("Use your existing desktop client or virtual-machine console for desktop access.")
                         .font(.callout).foregroundStyle(.secondary)
                 }.padding(16).frame(maxWidth: .infinity, alignment: .leading)
                     .background(Color.primary.opacity(0.035), in: RoundedRectangle(cornerRadius: 12))
-                Text("Native prototype. Real connection and build verification must be recorded separately; this screen never substitutes sample output for a live machine.")
-                    .font(.caption).foregroundStyle(.secondary)
             }.frame(maxWidth: 630, alignment: .leading).frame(maxWidth: .infinity, alignment: .leading).padding(32)
         }.frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -209,7 +206,7 @@ struct MachineView: View {
                         }
                     } else {
                         Label("Select a file to preview it", systemImage: "doc.text.magnifyingglass").foregroundStyle(.secondary)
-                        Text("Directories open on click. Text previews are read-only; Save… downloads a regular file to a new local filename.")
+                        Text("Click a folder to open it. Previews are read-only. Downloads never overwrite existing local files.")
                             .font(.caption).foregroundStyle(.secondary)
                         Spacer()
                     }
@@ -233,7 +230,7 @@ struct MachineView: View {
                         .disabled(!model.connected || model.terminalState == "stopping")
                 }
             }
-            Text("Basic text view of a real interactive SSH shell, not a full terminal emulator. Use your terminal app for passwords, editors, cursor-based tools, and full-screen programs.")
+            Text("Text console only. Use your terminal app for passwords, editors, and full-screen tools.")
                 .font(.caption).foregroundStyle(.secondary)
             ScrollViewReader { proxy in
                 ScrollView([.vertical, .horizontal]) {
@@ -255,7 +252,7 @@ struct MachineView: View {
                     .disabled(model.terminalState != "running" || model.terminalInput.utf8.count > 65_535)
                 Button("Ctrl-C") { model.interruptTerminal() }.disabled(model.terminalState != "running")
             }
-            Text("Commands run only when you send them. A shell command can change the remote machine. Perch does not auto-run commands or request passwords.")
+            Text("Commands run on your remote machine and can change files. Background jobs may keep running after you disconnect.")
                 .font(.caption).foregroundStyle(.secondary)
         }.padding(20).frame(maxWidth: .infinity, maxHeight: .infinity)
     }

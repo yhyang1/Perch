@@ -23,9 +23,17 @@ This is source for an early prototype, not a production-ready remote desktop app
 - Agent execution is a potential later layer on the same machine, not part of this initial prototype.
 - Authentication uses existing SSH credentials in noninteractive batch mode. If those do not work, connection fails visibly. Perch does not ask for or save passwords, enroll host keys or generate keys. Use your established SSH setup process or an existing system terminal for interactive sign-in.
 
-## Requirements
+## Install a published preview
 
-**Mac**
+Published Apple Silicon previews are available from [GitHub Releases](https://github.com/yhyang1/Perch/releases). Mount the arm64 DMG and drag Perch.app to Applications. The app includes Python and the bridge: a source checkout, Python installation and PERCH_ROOT are not needed.
+
+GitHub CI artifacts are **ad-hoc signed and not notarized**. Final release assets can be signed and notarized on an authorized Mac; inspect the particular release’s BUILD-METADATA.json and final SHA256SUMS for its verified status. Unnotarized files may be blocked by macOS or managed-device policy. Perch does not disable security checks or remove quarantine. Only arm64/macOS 13+ is targeted; no Intel or Universal claim is made.
+
+Existing SSH access and trusted host keys are still required. See [building and releasing](docs/RELEASING.md) for exact runtime provenance, licenses, CI permissions and checksums. The source-development requirements below do not apply to installed previews.
+
+## Source-development requirements
+
+**Development Mac**
 
 - macOS 13 or newer
 - Xcode or an existing Swift 5.9+ toolchain
@@ -38,7 +46,7 @@ This is source for an early prototype, not a production-ready remote desktop app
 - Standard GNU utilities (`id`, `uname`, `find`, `head`, `cat`) and a shell
 - No agent application or agent account required
 
-No dependency installer runs. The Python code uses only the standard library; the Swift package has no third-party dependencies.
+The bridge uses only the Python standard library; Swift has no third-party package dependencies. The distribution build downloads one exact checksum-verified standalone Python runtime, not a pip/Homebrew installer.
 
 ## Run
 
@@ -98,3 +106,5 @@ The portable fixture explicitly simulates the requested GNU find record format a
 ## License
 
 [MIT](LICENSE) covers Perch's own source. OpenSSH, Python, Swift and Omarchy remain under their respective licenses.
+
+Distribution sources: `packaging/`, `scripts/build_macos.sh` and `.github/workflows/macos.yml`. Native packaging results must be established by the matching workflow run; source/fixture tests alone do not prove a DMG is valid.

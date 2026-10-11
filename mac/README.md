@@ -4,6 +4,10 @@ A dependency-free SwiftUI client for verified SSH identity, workspace file brows
 
 The UI starts disconnected and uses no simulated machine identity or output. The native Swift package built and 7 support tests passed on macOS arm64 (Swift 6.4). See [the validation record](../docs/VALIDATION.md) for completed live SSH and native UI checks, along with the checks still outstanding.
 
+## Installed app
+
+The packaged app uses its built-in isolated Python runtime and bridge. It hides developer runtime/project fields and fails clearly if the app is incomplete instead of loading external code. Existing SSH host/workspace fields remain the connection controls. See [release documentation](../docs/RELEASING.md) for the arm64-only, ad-hoc-signed and unnotarized alpha limits.
+
 ## Build on a Mac
 
 Requires macOS 13+, an existing Swift 5.9+ toolchain, an existing Python 3.9+ interpreter, and the complete Perch source folder. No third-party Swift packages are used.
@@ -22,7 +26,7 @@ Or, after building:
 PERCH_ROOT="$PWD" ./mac/.build/debug/PerchMac
 ```
 
-This produces a development executable, not a signed/notarized distributable `.app` bundle. Packaging, signing, sandboxing, icons, and automatic updates remain outside this prototype.
+These Swift commands produce a development executable. To build the self-contained ad-hoc-signed `.app` and DMG, run `bash scripts/build_macos.sh v0.1.0-alpha.1` from the repository root. Developer ID signing, notarization and automatic updates are not configured.
 
 ## Connect
 
@@ -81,3 +85,5 @@ The byte-oriented framer preserves UTF-8 across read boundaries and limits JSON 
 - Confirm the desktop card remains honest about its incomplete integration.
 
 Included unit-test sources cover input validation, safe shell quoting, fragmented Unicode JSON, multiple/oversized frames, and text-only terminal formatting. All 7 tests passed in the native macOS check.
+
+The bundled-runtime change adds 12 support tests to the previous 7. Their current pass/fail status must be recorded from the native build, not inferred from the earlier source validation.
