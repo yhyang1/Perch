@@ -2,6 +2,7 @@ import asyncio
 import tempfile
 import os
 import sys
+import shutil
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -28,6 +29,24 @@ class MachineTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(self.identity['hostname'])
         self.assertTrue(self.identity['user'])
         self.assertEqual(self.identity['workspace'], str(self.root))
+        self.assertEqual(self.machine.state, 'ready')
+
+    async def test_identity_probe_without_hostname_executable(self):
+        # Minimal guest-like PATH intentionally has no hostname executable.
+        # The fixture uses an absolute Python path and /bin/sh, so only the
+        # real probe's external commands must be present here.
+        tools = self.root / 'minimal-bin'
+        tools.mkdir()
+        for name in ('uname', 'id'):
+            executable = shutil.which(name)
+            self.assertIsNotNone(executable, name + ' is needed for the local probe test')
+            (tools / name).symlink_to(executable)
+        with patch.dict(os.environ, {'PATH': str(tools)}):
+            self.assertIsNone(shutil.which('hostname'))
+            identity = await self.machine.connect({'host': 'fixture', 'workspace': str(self.root)})
+        self.assertTrue(identity['hostname'])
+        self.assertTrue(identity['user'])
+        self.assertEqual(identity['workspace'], str(self.root))
         self.assertEqual(self.machine.state, 'ready')
 
     async def test_default_workspace_uses_login_directory(self):

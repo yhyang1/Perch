@@ -2,7 +2,7 @@
 
 A dependency-free SwiftUI client for verified SSH identity, workspace file browsing, read-only text previews, explicit downloads, and a real interactive SSH shell shown in a basic text console. Machine connection does not require an AI agent.
 
-The UI starts disconnected and uses no simulated machine identity or output. **The native Swift package built and 7 support tests passed on macOS arm64 (Swift 6.4). UI behavior and live SSH validation remain unverified.** Record acceptance results separately rather than treating the checklist below as a pass.
+The UI starts disconnected and uses no simulated machine identity or output. The native Swift package built and 7 support tests passed on macOS arm64 (Swift 6.4). See [the validation record](../docs/VALIDATION.md) for completed live SSH and native UI checks, along with the checks still outstanding.
 
 ## Build on a Mac
 

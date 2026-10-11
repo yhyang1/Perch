@@ -65,7 +65,7 @@ class Machine:
         self.status('connecting')
         try:
             # Fixed read-only commands; no software installation, settings, or agent process.
-            command = ('cd -- ' + shlex.quote(connection.workspace) + ' && ' if workspace else '') + 'hostname && id -un && uname -s && uname -m && pwd -P'
+            command = ('cd -- ' + shlex.quote(connection.workspace) + ' && ' if workspace else '') + 'uname -n && id -un && uname -s && uname -m && pwd -P'
             raw = (await self.run(command, limit=65536)).decode(errors='replace').splitlines()
             if len(raw) != 5:
                 raise RpcError('Unexpected system probe output; check login-shell banners.')

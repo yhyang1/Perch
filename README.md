@@ -35,7 +35,7 @@ This is source for an early prototype, not a production-ready remote desktop app
 **Omarchy machine**
 
 - Already configured and authorized SSH access and trusted host key
-- Standard GNU utilities (`hostname`, `id`, `uname`, `find`, `head`, `cat`) and a shell
+- Standard GNU utilities (`id`, `uname`, `find`, `head`, `cat`) and a shell
 - No agent application or agent account required
 
 No dependency installer runs. The Python code uses only the standard library; the Swift package has no third-party dependencies.
